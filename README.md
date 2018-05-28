@@ -40,3 +40,4 @@ Drag the file "cardian_bot" into the application "luvit", a DOS window will show
 
 
 Run this in conjunction with the FFXI Windower addon "Cardian"
+https://github.com/sjkinnett1/cardian
