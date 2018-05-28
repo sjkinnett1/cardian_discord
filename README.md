@@ -1,7 +1,7 @@
 # cardian_discord
 The Discord Bot for the Cardian add-on for FFXI
 
-Do NOT put this folder in your Windower directory!  Windower includes will interfere with the bot!
+Do NOT put this folder in your Windower directory!  Windower will interfere with the bot!
 
 You will need Luvit, Discordia and the Windower addon in addition to this!
 (Install Luvit and Discordia in your Cardian_Discord folder by navigating to the folder in CMD and processing the commands provided)
