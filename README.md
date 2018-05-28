@@ -8,7 +8,6 @@ You will need:
 
 Luvit - https://luvit.io/
 CMD Command (Run this in CMD after navigating to your Cardian_Discord folder):
-
 PowerShell -NoProfile -ExecutionPolicy unrestricted -Command "[Net.ServicePointManager]::SecurityProtocol = 'Tls12'; iex ((new-object net.webclient).DownloadString('https://github.com/luvit/lit/raw/master/get-lit.ps1'))"
 ADD your Cardian_Discord folder to PATH
 
