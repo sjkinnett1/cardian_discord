@@ -12,15 +12,18 @@ CMD Command (Run this in CMD after navigating to your Cardian_Discord folder):
 PowerShell -NoProfile -ExecutionPolicy unrestricted -Command "[Net.ServicePointManager]::SecurityProtocol = 'Tls12'; iex ((new-object net.webclient).DownloadString('https://github.com/luvit/lit/raw/master/get-lit.ps1'))"
 ADD your Cardian_Discord folder to PATH
 
+
 Discordia - https://github.com/SinisterRectus/Discordia
 CMD Command (Run this in CMD after navigating to your Cardian_Discord folder):
 
 lit install SinisterRectus/discordia
 
+
 A Bot registered with Discord:
 https://discordapp.com/developers/applications/me
 Follow all the way through "Create a Bot User" and make sure to get the APP BOT USER token.
 Join your bot to your channel using the OAUTH2 URL GENERATOR. Set Scope as 'bot' and permissions as 'Administrator'. Copy the generated URL and go to it in browser. Follow prompts and select your server to authorize bot access.
+
 
 Setup:
 
@@ -34,5 +37,6 @@ Setup:
 
 Running Cardian_Discord:
 Drag the file "cardian_bot" into the application "luvit", a DOS window will show up if done correctly.  If this window closes, the bot is not active.
+
 
 Run this in conjunction with the FFXI Windower addon "Cardian"
