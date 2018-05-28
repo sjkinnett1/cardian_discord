@@ -22,6 +22,7 @@ lit install SinisterRectus/discordia
 
 A Bot registered with Discord:
 https://discordapp.com/developers/applications/me
+
 Follow all the way through "Create a Bot User" and make sure to get the APP BOT USER token.
 Join your bot to your channel using the OAUTH2 URL GENERATOR. Set Scope as 'bot' and permissions as 'Administrator'. Copy the generated URL and go to it in browser. Follow prompts and select your server to authorize bot access.
 
