@@ -26,7 +26,7 @@
 
 -- _addon.name = 'Cardian_Bot'
 -- _addon.author = 'Stephen Kinnett'
--- _addon.version = '0.0.0.1'
+-- _addon.version = '0.0.0.2'
 
 local discordia = require('discordia')
 local client = discordia.Client()
@@ -45,6 +45,7 @@ show_tells = discord_info.show_tells()
 show_linkshell = discord_info.show_linkshell()
 show_shouts = discord_info.show_linkshell()
 spam_tolerance = discord_info.spam_tolerance()
+message_request = {}
 
 --Creates or empties files used for data transfer
 local f=io.open(discardian_path .. "to_discord.txt","w+")
@@ -104,7 +105,7 @@ client:on('messageCreate', function(message)
 	-- end (if no following elseif commands)
 	
 	if message.content == "killbot" then 
-		exit()
+		os.exit()
 	elseif message.content == "momo" then
 		message.channel:send(":robot:")
 	--IMPORTANT FUNCTION! Erases cardian bot-net and handshakes for new bot-net
@@ -143,6 +144,12 @@ client:on('messageCreate', function(message)
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write('/l <' .. message.author.name .. '> ' .. message_modified:sub(4) .. "\n")
 		f:close()
+	elseif message.content == "!screenshot" then
+		message_request = message
+		local f=io.open(discardian_path .. "to_ffxi.txt","a")
+		f:write("SCREENSHOTREQUESTED\n")
+		f:close()
+		return
 	--Sends all non-cardian messages from Linkshell_channel to FFXI
 	elseif message.channel[4] == ls and message.author.bot == false and show_linkshell == true then
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
@@ -203,7 +210,7 @@ end)
 function cardian_announce()
 	local tmp_channel = client:getChannel(tl)
 	if tmp_channel ~= nil then
-		tmp_channel:send("Cardians, assemble!") 
+		tmp_channel:send("Cardians, assemble!")
 	end
 end
 
@@ -252,6 +259,11 @@ function discord_content_found(content)
 	end
 end
 
+function screenshot(screenshot_name)
+	tmp = discardian_path:sub(1, discardian_path:len() - 15) .. "screenshots/" .. screenshot_name .. ".png"
+	message_request.channel:send {file = tmp}
+end
+
 --Reads file populated by FFXI add-on
 function check_file()
 	--Opens and reads file for incoming data, adds found lines to new_chat
@@ -269,6 +281,11 @@ function check_file()
 		for k, line in pairs(new_chat) do
 			found = 0
 			to_delete = 0
+			if line:sub(1,20) == 'CARDIANADDONUNLOADED' then print("Exiting!") os.exit() end
+			if line:sub(1,18) == 'SCREENSHOTRETURNED' then
+				screenshot(line:sub(19, line:len() - 1))
+				return
+			end
 			--Checks for an already processed message, trims log if it gets longer than spam_tolerance
 			for pos, check in pairs(chat_log) do
 				if (check == line:sub(3, line:sub(1):len() -1)) then found = 1 end
