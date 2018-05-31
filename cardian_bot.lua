@@ -26,7 +26,7 @@
 
 -- _addon.name = 'Cardian_Bot'
 -- _addon.author = 'Stephen Kinnett'
--- _addon.version = '0.0.0.2'
+-- _addon.version = '0.0.0.3'
 
 local discordia = require('discordia')
 local client = discordia.Client()
@@ -254,7 +254,7 @@ function discord_content_found(content)
 		end
 		tmp_user = client:getUser(tmp_user_id)
 		return(tmp_user.username)
-	else
+	elseif content:sub(1, 1) == "#" or content:sub(1, 1) == ":" or content:sub(1, 2) == "a:" then
 		return("<discord content>")
 	end
 end
