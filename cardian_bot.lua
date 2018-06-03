@@ -26,7 +26,7 @@
 
 -- _addon.name = 'Cardian_Bot'
 -- _addon.author = 'Stephen Kinnett'
--- _addon.version = '0.0.0.3'
+-- _addon.version = '0.0.0.4'
 
 local discordia = require('discordia')
 local client = discordia.Client()
@@ -46,6 +46,7 @@ show_linkshell = discord_info.show_linkshell()
 show_shouts = discord_info.show_linkshell()
 spam_tolerance = discord_info.spam_tolerance()
 message_request = {}
+tell_reply = "<me>"
 
 --Creates or empties files used for data transfer
 local f=io.open(discardian_path .. "to_discord.txt","w+")
@@ -190,6 +191,7 @@ client:on('messageCreate', function(message)
 		end
 	--Allows for users in the tell channel to send commands directly to FFXI for implementation
 	elseif message.channel[4] == tl and message.author.bot == false and message.content:sub(1,1) == "/" and show_tells == true then
+		if message.content:sub(1,3) == "/r " then message_modified = message_modified:gsub("/r ", "/t " .. tell_reply .. " ") end
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write(message_modified .. "\n")
 		f:close()
@@ -298,6 +300,7 @@ function check_file()
 				--Acts upon non-repeated data
 				tmp = line:sub(1,2) --First 2 characters are routing information
 				tmp_channel_id = _G[tmp] --Finds target channel based on routing characters
+				if tmp == "tl" then line:gsub("__***(.-)**__", function(content) tell_reply = content end) end
 				local tmp_channel = client:getChannel(tmp_channel_id) --Gets channel data struct based on channel_id
 				tmp = (line:sub(3)) --Isolates the message part
 				if tmp ~= nil and tmp_channel ~= nil then
