@@ -26,7 +26,17 @@
 
 -- _addon.name = 'Cardian_Bot'
 -- _addon.author = 'Stephen Kinnett'
--- _addon.version = '0.0.0.4'
+-- _addon.version = '0.0.0.5'
+
+-- Commands (execute from non-linkshell channel):
+--!shouts - turn on shout reporting in shout channel
+--!noshouts - turn off shout reporting in shout channel
+--!tells - turn on traffic up and down from the tell channel
+--!notells - turn off traffic up and down from the tell channel
+--!linkshell - turn on linkshell message traffic up and down from the linkshell channel (and down from other channels using "/l <message"
+--!nolinkshell - turn off linkshell message traffic up and down from the linkshell channel
+--!linkshellin - toggles on or off incoming linkshell messages to the linkshell channel
+--!linkshellout - toggles on or off outgoing linkshell messages from linkshell channel (or other channels using "/l <message>"
 
 local discordia = require('discordia')
 local client = discordia.Client()
@@ -42,8 +52,9 @@ discardian_path = discord_info.discardian_path()
 admin = discord_info.admin()
 token = discord_info.bot_token()
 show_tells = discord_info.show_tells()
-show_linkshell = discord_info.show_linkshell()
-show_shouts = discord_info.show_linkshell()
+linkshell_out = discord_info.show_linkshell()
+linkshell_in = discord_info.show_linkshell()
+show_shouts = discord_info.show_shouts()
 spam_tolerance = discord_info.spam_tolerance()
 message_request = {}
 tell_reply = "<me>"
@@ -141,7 +152,7 @@ client:on('messageCreate', function(message)
 			i = i + 1
 		end
 	--Allows for sending non-Linkshell_channel messages by prefacing with "/l" in any cardian observed channel
-	elseif message.content:sub(1,3) == "/l " and message.author.bot == false and show_linkshell == true then
+	elseif message.content:sub(1,3) == "/l " and message.author.bot == false and linkshell_out == true then
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write('/l <' .. message.author.name .. '> ' .. message_modified:sub(4) .. "\n")
 		f:close()
@@ -152,11 +163,27 @@ client:on('messageCreate', function(message)
 		f:close()
 		return
 	--Sends all non-cardian messages from Linkshell_channel to FFXI
-	elseif message.channel[4] == ls and message.author.bot == false and show_linkshell == true then
+	elseif message.channel.id == ls and message.author.bot == false and linkshell_out == true then
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
-		f:write('/l <' .. message.author.name .. '> ' .. message_modified .. "\n")
+		linkshell_message = "/l <" .. message.author.name .. "> " .. message_modified .. "\n"
+		if string.len(linkshell_message) < 108 then
+			f:write(linkshell_message)
+		else
+			long_message_modified = message_modified
+			message_padding = string.len("/l <" .. message.author.name .."> " .. "\n")
+			linkshell_pickup_spot = 108 - message_padding
+			while string.len(message_padding .. long_message_modified) > 108 do
+				linkshell_message_sub = long_message_modified:sub(1, linkshell_pickup_spot)
+				linkshell_message_sub = string.reverse(linkshell_message_sub)
+				linkshell_last_space = string.find(linkshell_message_sub, " ")
+				linkshell_message_sub = string.sub(long_message_modified, 1, 108 - message_padding - linkshell_last_space)
+				f:write("/l <" .. message.author.name .. "> " .. linkshell_message_sub .. "\n")
+				long_message_modified = long_message_modified:sub(109 - message_padding - linkshell_last_space)
+			end
+			f:write("/l <" .. message.author.name .. "> " .. long_message_modified)
+		end
 		f:close()
-		table.insert(chat_log, '/l <' .. message.author.name .. '> ' .. message_modified .. "\n")
+		table.insert(chat_log, "/l <" .. message.author.name .. "> " .. message_modified .. "\n")
 	--Toggles for activating/deactivating tell, shout, and linkshell messages
 	elseif message.content == "!notells" and message.author.id == admin then
 		show_tells = false
@@ -171,12 +198,19 @@ client:on('messageCreate', function(message)
 		show_shouts = true
 		print("Set show_shouts to true!")
 	elseif message.content == "!nolinkshell" and message.author.id == admin then
-		show_linkshell = false
-		print("Set show_linkshell to false!")
+		linkshell_out = false
+		linkshell_in = false
+		print("Set linkshell_out and linkshell_in to false!")
 	elseif message.content == "!linkshell" and message.author.id == admin then
-		show_linkshell = true
-		print("Set show_linkshell to true!")
-	--Allows for watch words, things people would like to be pinged if a cardian sees in messages. Names, quests, content, items, etc.
+		linkshell_out = true
+		linkshell_in = true
+		print("Set linkshell_out and linkshell_in to true!")
+	elseif message.content == "!linkshellout" and message.author.id == admin then
+		if linkshell_out == false then linkshell_out = true elseif linkshell_out == true then linkshell_out = false end
+		message.channel:send("Set linkshell_out to " .. (linkshell_out and 'true' or 'false') .. "!")
+	elseif message.content == "!linkshellin" and message.author.id == admin then
+		if linkshell_in == false then linkshell_in = true elseif linkshell_in == true then linkshell_in = false end
+		message.channel:send("Set linkshell_in to " .. (linkshell_in and 'true' or 'false') .. "!")	--Allows for watch words, things people would like to be pinged if a cardian sees in messages. Names, quests, content, items, etc.
 	--Adds word and user to list for response if word is found
 	elseif message.content:sub(1, 7) == "!watch " then
 		message.channel:send("Added watch word " .. message.content:sub(8) .. "!")
@@ -190,7 +224,7 @@ client:on('messageCreate', function(message)
 			end
 		end
 	--Allows for users in the tell channel to send commands directly to FFXI for implementation
-	elseif message.channel[4] == tl and message.author.bot == false and message.content:sub(1,1) == "/" and show_tells == true then
+	elseif message.channel.id == tl and message.author.bot == false and message.content:sub(1,1) == "/" and show_tells == true then
 		if message.content:sub(1,3) == "/r " then message_modified = message_modified:gsub("/r ", "/t " .. tell_reply .. " ") end
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write(message_modified .. "\n")
@@ -263,6 +297,7 @@ end
 
 function screenshot(screenshot_name)
 	tmp = discardian_path:sub(1, discardian_path:len() - 15) .. "screenshots/" .. screenshot_name .. ".png"
+	print(tmp)
 	message_request.channel:send {file = tmp}
 end
 
@@ -305,7 +340,7 @@ function check_file()
 				tmp = (line:sub(3)) --Isolates the message part
 				if tmp ~= nil and tmp_channel ~= nil then
 					--Checks to make sure the target channel is accepting messages and sends
-					if (tmp_channel_id == tl and show_tells == false) or (tmp_channel_id == ls and show_linkshell == false) or (tmp_channel_id == sh and show_shouts == false) then
+					if (tmp_channel_id == tl and show_tells == false) or (tmp_channel_id == ls and linkshell_in == false) or (tmp_channel_id == sh and show_shouts == false) then
 						return
 					else
 						tmp_channel:send(tmp) 
