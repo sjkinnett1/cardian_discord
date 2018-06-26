@@ -26,7 +26,7 @@
 
 -- _addon.name = 'Cardian_Bot'
 -- _addon.author = 'Stephen Kinnett'
--- _addon.version = '0.0.0.5'
+-- _addon.version = '2018.6.25.1'
 
 -- Commands (execute from non-linkshell channel):
 --!shouts - turn on shout reporting in shout channel
@@ -45,6 +45,7 @@ discordia.extensions()
 local clock = discordia.Clock()
 
 --Loads stored server info and default settings
+
 _G["sh"] = discord_info.shout_channel_id()
 _G["ls"] = discord_info.linkshell_channel_id()
 _G["tl"] = discord_info.tell_channel_id()
@@ -52,8 +53,7 @@ discardian_path = discord_info.discardian_path()
 admin = discord_info.admin()
 token = discord_info.bot_token()
 show_tells = discord_info.show_tells()
-linkshell_out = discord_info.show_linkshell()
-linkshell_in = discord_info.show_linkshell()
+linkshell_settings = discord_info.show_linkshell()
 show_shouts = discord_info.show_shouts()
 spam_tolerance = discord_info.spam_tolerance()
 message_request = {}
@@ -115,7 +115,6 @@ client:on('messageCreate', function(message)
 	-- if (or elseif, if placed after initial if) message.content == <TRIGGER_WORD> then
 		-- <resultant action>
 	-- end (if no following elseif commands)
-	
 	if message.content == "killbot" then 
 		os.exit()
 	elseif message.content == "momo" then
@@ -127,7 +126,7 @@ client:on('messageCreate', function(message)
 		cardian_total = 1
 		message.channel:send("Cardian reporting for duty!")
 	--IMPORTANT FUNCTION! Adds all bot-net handshakes to bot-net (including self from previous message.content)
-	elseif message.content == "Cardian reporting for duty!" then
+	elseif message.content == "Cardian reporting for duty!" and message.author.bot == true then
 		table.insert(cardians, message.author.id)
 		--Each time a new bot is added to cardians, every bot sorts list so they all have the same bots in the same order
 		--This allows them to establish a priority list based upon their Discord-assigned IDs.
@@ -151,19 +150,55 @@ client:on('messageCreate', function(message)
 			table.insert(cardian_check_times, j)
 			i = i + 1
 		end
-	--Allows for sending non-Linkshell_channel messages by prefacing with "/l" in any cardian observed channel
-	elseif message.content:sub(1,3) == "/l " and message.author.bot == false and linkshell_out == true then
+	elseif message.content == "!nolinkshell" and contains(admin, message.author.id) then
+		print('hmmm')
+		if linkshell_settings.outgoing[message.channel.id] ~= nil then
+			linkshell_settings.outgoing[message.channel.id] = false
+		end
+		if linkshell_settings.incoming[message.channel.id] ~= nil then
+			linkshell_settings.incoming[message.channel.id] = false
+		end
+		print("Set linkshell_out and linkshell_in to false!")
+		return
+	elseif message.content == "!linkshell" and contains(admin, message.author.id) then
+		if linkshell_settings.outgoing[message.channel.id] ~= nil then
+			linkshell_settings.outgoing[message.channel.id] = true
+		end
+		if linkshell_settings.incoming[message.channel.id] ~= nil then
+			linkshell_settings.incoming[message.channel.id] = true
+		end
+		print("Set linkshell_out and linkshell_in to true!")
+		return
+	elseif message.content == "!linkshellout" and contains(admin, message.author.id) then
+		if linkshell_settings.outgoing[message.channel.id] ~= nil then
+			if linkshell_settings.outgoing[message.channel.id] == false then 
+				linkshell_settings.outgoing[message.channel.id] = true 
+			elseif linkshell_settings.outgoing[message.channel.id] == true then 
+				linkshell_settings.outgoing[message.channel.id] = false 
+			end
+			message.channel:send("Set linkshell_out to " .. (linkshell_settings.outgoing[message.channel.id] and 'true' or 'false') .. "!")
+		end
+	elseif message.content == "!linkshellin" and contains(admin, message.author.id) then
+		if linkshell_settings.incoming[message.channel.id] ~= nil then
+			if linkshell_settings.incoming[message.channel.id] == false then 
+				linkshell_settings.incoming[message.channel.id] = true 
+			elseif linkshell_settings.incoming[message.channel.id] == true then 
+				linkshell_settings.incoming[message.channel.id] = false 
+			end
+			message.channel:send("Set linkshell_in to " .. (linkshell_settings.incoming[message.channel.id] and 'true' or 'false') .. "!")
+		end	--Allows for sending non-Linkshell_channel messages by prefacing with "/l" in any cardian observed channel
+	elseif message.content:sub(1,3) == "/l " and message.author.bot == false and linkshell_settings.outgoing[message.channel.id] == true then
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write('/l <' .. message.author.name .. '> ' .. message_modified:sub(4) .. "\n")
 		f:close()
-	elseif message.content == "!screenshot" then
+	elseif message.content == "!screenshot" and contains(admin, message.author.id) then
 		message_request = message
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write("SCREENSHOTREQUESTED\n")
 		f:close()
 		return
 	--Sends all non-cardian messages from Linkshell_channel to FFXI
-	elseif message.channel.id == ls and message.author.bot == false and linkshell_out == true then
+	elseif contains(ls, message.channel.id) and message.author.bot == false and linkshell_settings.outgoing[message.channel.id] == true then
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		linkshell_message = "/l <" .. message.author.name .. "> " .. message_modified .. "\n"
 		if string.len(linkshell_message) < 108 then
@@ -185,32 +220,18 @@ client:on('messageCreate', function(message)
 		f:close()
 		table.insert(chat_log, "/l <" .. message.author.name .. "> " .. message_modified .. "\n")
 	--Toggles for activating/deactivating tell, shout, and linkshell messages
-	elseif message.content == "!notells" and message.author.id == admin then
+	elseif message.content == "!notells" and contains(admin, message.author.id) then
 		show_tells = false
 		print("Set show_tells to false!")
-	elseif message.content == "!tells" and message.author.id == admin then
+	elseif message.content == "!tells" and contains(admin, message.author.id) then
 		show_tells = true
 		print("Set show_tells to true!")
-	elseif message.content == "!noshouts" and message.author.id == admin then
+	elseif message.content == "!noshouts" and contains(admin, message.author.id) then
 		show_shouts = false
 		print("Set show_shouts to false!")
-	elseif message.content == "!shouts" and message.author.id == admin then
+	elseif message.content == "!shouts" and contains(admin, message.author.id) then
 		show_shouts = true
 		print("Set show_shouts to true!")
-	elseif message.content == "!nolinkshell" and message.author.id == admin then
-		linkshell_out = false
-		linkshell_in = false
-		print("Set linkshell_out and linkshell_in to false!")
-	elseif message.content == "!linkshell" and message.author.id == admin then
-		linkshell_out = true
-		linkshell_in = true
-		print("Set linkshell_out and linkshell_in to true!")
-	elseif message.content == "!linkshellout" and message.author.id == admin then
-		if linkshell_out == false then linkshell_out = true elseif linkshell_out == true then linkshell_out = false end
-		message.channel:send("Set linkshell_out to " .. (linkshell_out and 'true' or 'false') .. "!")
-	elseif message.content == "!linkshellin" and message.author.id == admin then
-		if linkshell_in == false then linkshell_in = true elseif linkshell_in == true then linkshell_in = false end
-		message.channel:send("Set linkshell_in to " .. (linkshell_in and 'true' or 'false') .. "!")	--Allows for watch words, things people would like to be pinged if a cardian sees in messages. Names, quests, content, items, etc.
 	--Adds word and user to list for response if word is found
 	elseif message.content:sub(1, 7) == "!watch " then
 		message.channel:send("Added watch word " .. message.content:sub(8) .. "!")
@@ -224,7 +245,7 @@ client:on('messageCreate', function(message)
 			end
 		end
 	--Allows for users in the tell channel to send commands directly to FFXI for implementation
-	elseif message.channel.id == tl and message.author.bot == false and message.content:sub(1,1) == "/" and show_tells == true then
+	elseif contains(tl, message.channel.id) and message.author.bot == false and message.content:sub(1,1) == "/" and show_tells == true then
 		if message.content:sub(1,3) == "/r " then message_modified = message_modified:gsub("/r ", "/t " .. tell_reply .. " ") end
 		local f=io.open(discardian_path .. "to_ffxi.txt","a")
 		f:write(message_modified .. "\n")
@@ -244,8 +265,8 @@ end)
 
 --Upon initilization, beings handshake to establish list of active cardians
 function cardian_announce()
-	local tmp_channel = client:getChannel(tl)
-	if tmp_channel ~= nil then
+	for k,v in pairs(tl) do
+		tmp_channel = client:getChannel(v)
 		tmp_channel:send("Cardians, assemble!")
 	end
 end
@@ -278,6 +299,15 @@ function cardian_remove(member)
 		table.insert(cardian_check_times, j)
 		i = i + 1
 	end
+end
+
+function contains(tab, val)
+	for index, value in pairs(tab) do
+		if value == val then
+			return true
+		end
+	end
+	return false
 end
 
 --Addresses pinging someone in a channel showing as user_id in FFXI
@@ -334,16 +364,21 @@ function check_file()
 			else
 				--Acts upon non-repeated data
 				tmp = line:sub(1,2) --First 2 characters are routing information
-				tmp_channel_id = _G[tmp] --Finds target channel based on routing characters
+				tmp_channel = _G[tmp] --Finds target channel based on routing characters
 				if tmp == "tl" then line:gsub("__***(.-)**__", function(content) tell_reply = content end) end
-				local tmp_channel = client:getChannel(tmp_channel_id) --Gets channel data struct based on channel_id
 				tmp = (line:sub(3)) --Isolates the message part
 				if tmp ~= nil and tmp_channel ~= nil then
 					--Checks to make sure the target channel is accepting messages and sends
-					if (tmp_channel_id == tl and show_tells == false) or (tmp_channel_id == ls and linkshell_in == false) or (tmp_channel_id == sh and show_shouts == false) then
+					if (tmp_channel == tl and show_tells == false) or (tmp_channel == sh and show_shouts == false) then
 						return
 					else
-						tmp_channel:send(tmp) 
+						for k, channel in pairs(tmp_channel) do
+							if tmp_channel == ls and linkshell_settings.incoming[channel] == false then return 
+							else 
+								channel = client:getChannel(channel) --Gets channel data struct based on channel_id
+								channel:send(tmp)
+							end
+						end
 					end
 				end
 				--Pings if watch word is found
@@ -359,4 +394,5 @@ function check_file()
 end
 
 client:run(token)
+
 	
