@@ -26,13 +26,13 @@
 
 -- _addon.name = 'Cardian'
 -- _addon.author = 'Stephen Kinnett'
--- _addon.version = '0.0.0.1'
+-- _addon.version = '2018.6.25.1'
 
 --To get this data, turn on Developer Mode in Discord and right click these targets. Select "Copy ID" and paste here (between ' and ')
-admin = 'PLACE YOUR DISCORD ID HERE'
-shout = 'PLACE SHOUT CHANNEL ID HERE'
-linkshell = 'PLACE LINKSHELL CHANNEL ID HERE'
-tell = 'PLACE TELL CHANNEL ID HERE'
+admin = {'PLACE YOUR DISCORD ID HERE', 'ADDITIONAL MAY BE DECLARED HERE'}
+shout = {'PLACE SHOUT CHANNEL ID HERE', 'ADDITIONAL MAY BE DECLARED HERE'}
+linkshell = {'PLACE LINKSHELL CHANNEL ID HERE', 'ADDITIONAL MAY BE DECLARED HERE'}
+tell = {'PLACE TELL CHANNEL ID HERE', 'ADDITIONAL MAY BE DECLARED HERE'}
 --Get this from the Discord developer page. (https://discordapp.com/developers/applications/me)
 token = 'PLACE DISCORD BOT TOKEN HERE'
 --Enter the path to your Cardian folder in Windower. Replace any "\" with "/". Do not include file.
@@ -45,6 +45,15 @@ sh_linkshell = true
 sh_tells = true
 sh_shouts = true
 
+linkshell_settings = {}
+linkshell_settings.incoming = {}
+linkshell_settings.outgoing = {}
+
+for k,v in pairs(linkshell) do
+	linkshell_settings.outgoing[v] = sh_linkshell
+	linkshell_settings.incoming[v] = sh_linkshell
+end
+
 return {
 	shout_channel_id = function() return shout end,
 	linkshell_channel_id = function() return linkshell end,
@@ -53,7 +62,7 @@ return {
 	discardian_path = function() return addon_path end,
 	admin = function() return admin end, 
 	spam_tolerance = function() return spam end,
-	show_linkshell = function() return sh_linkshell end,
+	show_linkshell = function() return linkshell_settings end,
 	show_tells = function() return sh_tells end,
 	show_shouts = function() return sh_shouts end,
 }
